@@ -6,10 +6,7 @@
     <style>
         body, html { margin:0; padding:0; width:100%; height:100%; background:#0b0c10; overflow:hidden; display:flex; justify-content:center; align-items:center; color:#fff; font-family:sans-serif; }
         .grid { position:absolute; width:100%; height:100%; background-image:radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px); background-size:24px 24px; z-index:1; }
-        
-        /* PERBAIKAN: Membuat Kontainer Teks Berada Tepat di Tengah-Tengah Layar Kaca */
         .container { text-align:center; z-index:10; position:absolute; width:100%; padding:0 20px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; align-items:center; }
-        
         h1 { font-size:2rem; letter-spacing:3px; text-shadow:0 0 15px #fff; animation:p 2.5s infinite; margin:0; }
         p { font-size:1.1rem; color:#a0aec0; margin-top:20px; line-height:1.6; letter-spacing:1px; display:none; max-width:600px; text-align:center; }
         @media (min-width: 768px) { h1 { font-size:2.8rem; } p { font-size:1.3rem; } }
@@ -32,6 +29,41 @@
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.addEventListener('resize', resize); resize();
 
+        // MESIN AUDIO SINTESIS (Murni Matematika Nada Piano Lembut)
+        let audioCtx;
+        function playNote(freq, start, duration) {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // Karakter suara meluruh halus (piano/guitar style)
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, start);
+            gainNode.gain.setValueAtTime(0.3, start);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, start + duration);
+            
+            osc.start(start);
+            osc.stop(start + duration);
+        }
+
+        function playFarewellMelody() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            // Progresi akord perpisahan yang menenangkan (C - G - Am - F)
+            const melody = [
+                {f: 261.63, t: 0.0}, {f: 329.63, t: 0.4}, {f: 392.00, t: 0.8}, // Akord C
+                {f: 196.00, t: 1.6}, {f: 246.94, t: 2.0}, {f: 293.66, t: 2.4}, // Akord G
+                {f: 220.00, t: 3.2}, {f: 261.63, t: 3.6}, {f: 329.63, t: 4.0}, // Akord Am
+                {f: 174.61, t: 4.8}, {f: 261.63, t: 5.2}, {f: 349.23, t: 5.6}  // Akord F
+            ];
+            melody.forEach(note => {
+                playNote(note.f, now + note.t, 1.2);
+            });
+            // Ulangi melodi secara terus-menerus setiap 7 detik
+            setTimeout(playFarewellMelody, 7000);
+        }
+
         class Balloon {
             constructor() {
                 this.x = Math.random() * canvas.width;
@@ -52,22 +84,24 @@
                 }
             }
             draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
+                ctx.save(); ctx.translate(this.x, this.y);
                 ctx.shadowBlur = 10; ctx.shadowColor = this.color;
                 ctx.beginPath(); ctx.moveTo(0, this.r); ctx.quadraticCurveTo(Math.sin(this.wobble)*5, this.r+15, 0, this.r+35);
                 ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
                 ctx.beginPath(); ctx.ellipse(0, 0, this.r * 0.85, this.r, 0, 0, Math.PI * 2);
                 ctx.fillStyle = this.color; ctx.fill();
                 ctx.beginPath(); ctx.moveTo(-4, this.r - 2); ctx.lineTo(4, this.r - 2); ctx.lineTo(0, this.r + 4); ctx.closePath();
-                ctx.fillStyle = this.color; ctx.fill();
-                ctx.restore();
+                ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
             }
         }
 
         function start() {
-            document.getElementById('b').style.display = 'none';
-            document.getElementById('t').innerHTML = "TERIMA KASIH SEMUANYA";
+            // Aktifkan Audio Context setelah interaksi klik (Aturan wajib browser modern)
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            playFarewellMelody();
+
+            document.getElementById('b').style.display = "none";
+            document.getElementById('t').innerHTML = "Terima Kasih Semuanya";
             const sub = document.getElementById('sub');
             sub.innerHTML = "Saya Pamit Undur Diri. Tetap Semangat Dan Sukses<br>Selalu Untuk Perjalanan Karir Kita Ke Depan! 🙏<br><br><span style='color:#fff; font-weight:bold;'>-MJE</span>";
             sub.style.display = "block";
